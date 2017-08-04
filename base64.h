@@ -10,8 +10,6 @@
 #ifndef base64_h__cb0c88b89db746c9a54752a78402846f
 #define base64_h__cb0c88b89db746c9a54752a78402846f  1
 
-#include <time.h>
-#include <stdio.h>
 #include <vector>
 #include <algorithm>
 #include <cassert>
@@ -22,10 +20,10 @@ namespace Base64Internal {
             return uc - 'A' ;
         }
         if ('a' <= uc && uc <= 'z') {
-            return 26 + uc - 'a' ;
+            return static_cast<uint8_t> (26 + uc - 'a') ;
         }
         if ('0' <= uc && uc <= '9') {
-            return 52 + uc - '0' ;
+            return static_cast<uint8_t> (52 + uc - '0') ;
         }
         if (uc == '+') {
             return 62 ;
@@ -42,10 +40,10 @@ namespace Base64Internal {
             return 'A' + uc ;
         }
         if (uc < 52) {
-            return 'a' + uc - 26 ;
+            return static_cast<uint8_t>('a' + uc - 26);
         }
         if (uc < 62) {
-            return '0' + uc - 52 ;
+            return static_cast<uint8_t>('0' + uc - 52);
         }
         if (uc == 62) {
             return '+' ;
@@ -63,7 +61,7 @@ namespace Base64Internal {
 inline std::vector<uint8_t> base64_encode(const void *input, size_t length)
 {
     using namespace Base64Internal ;
-    const uint8_t * bin = static_cast<const uint8_t *> (input) ;
+    auto bin = static_cast<const uint8_t *> (input) ;
     if (length == 0) {
         return std::vector<uint8_t>();
     }
@@ -73,14 +71,14 @@ inline std::vector<uint8_t> base64_encode(const void *input, size_t length)
 
     for (size_t i = 0 ; i < cntFullBlocks ; ++i) {
         auto b0 = bin [3 * i + 0] ;
-        const uint8_t a012345 = (b0 >> 2) & 0x3Fu ;
-        const uint8_t a67____ = (b0 << 4) & 0x3Fu ;
+        const auto a012345 = static_cast<const uint8_t>((b0 >> 2) & 0x3Fu);
+        const auto a67____ = static_cast<const uint8_t>((b0 << 4) & 0x3Fu);
         auto b1 = bin [3 * i + 1] ;
-        const uint8_t b__0123 = (b1 >> 4) & 0x3Fu ;
-        const uint8_t b4567__ = (b1 << 2) & 0x3Fu ;
+        const auto b__0123 = static_cast<const uint8_t>((b1 >> 4) & 0x3Fu);
+        const auto b4567__ = static_cast<const uint8_t>((b1 << 2) & 0x3Fu);
         auto b2 = bin [3 * i + 2] ;
-        const uint8_t c____01 = (b2 >> 6) & 0x3Fu ;
-        const uint8_t c234567 = (b2 >> 0) & 0x3Fu ;
+        const auto c____01 = static_cast<const uint8_t>((b2 >> 6) & 0x3Fu);
+        const auto c234567 = static_cast<const uint8_t>((b2 >> 0) & 0x3Fu);
 
         result [4 * i + 0] = encode (a012345) ;
         result [4 * i + 1] = encode (a67____ | b__0123) ;
@@ -95,8 +93,8 @@ inline std::vector<uint8_t> base64_encode(const void *input, size_t length)
         break ;
     case 1: {
         auto b0 = bin [lastIdx + 0] ;
-        const uint8_t a012345 = (b0 >> 2) & 0x3Fu ;
-        const uint8_t a67____ = (b0 << 4) & 0x3Fu ;
+        const auto a012345 = static_cast<const uint8_t>((b0 >> 2) & 0x3Fu);
+        const auto a67____ = static_cast<const uint8_t>((b0 << 4) & 0x3Fu);
         result.emplace_back (encode (a012345)) ;
         result.emplace_back (encode (a67____)) ;
         result.emplace_back ('=') ;
@@ -105,11 +103,11 @@ inline std::vector<uint8_t> base64_encode(const void *input, size_t length)
     }
     case 2: {
         auto b0 = bin [lastIdx + 0] ;
-        const uint8_t a012345 = (b0 >> 2) & 0x3Fu ;
-        const uint8_t a67____ = (b0 << 4) & 0x3Fu ;
+        const auto a012345 = static_cast<const uint8_t>((b0 >> 2) & 0x3Fu);
+        const auto a67____ = static_cast<const uint8_t>((b0 << 4) & 0x3Fu);
         auto b1 = bin [lastIdx + 1] ;
-        const uint8_t b__0123 = (b1 >> 4) & 0x3Fu ;
-        const uint8_t b4567__ = (b1 << 2) & 0x3Fu ;
+        const auto b__0123 = static_cast<const uint8_t>((b1 >> 4) & 0x3Fu);
+        const auto b4567__ = static_cast<const uint8_t>((b1 << 2) & 0x3Fu);
         result.emplace_back (encode (a012345)) ;
         result.emplace_back (encode (a67____ | b__0123)) ;
         result.emplace_back (encode (b4567__)) ;
@@ -136,9 +134,10 @@ inline std::vector<uint8_t> base64_encode (const std::vector<uint8_t> &bin) {
 inline std::vector<uint8_t> base64_decode(const void *input, size_t length)
 {
     using namespace Base64Internal ;
-    const uint8_t * b64 = static_cast<const uint8_t *> (input) ;
-    if (length == 0)
+    auto b64 = static_cast<const uint8_t *> (input) ;
+    if (length == 0) {
         return std::vector<uint8_t>();
+    }
     assert (length % 4 == 0) ;
     assert (4 <= length) ;
     size_t cntFullBlock = length / 4 - 1 ;
@@ -160,9 +159,9 @@ inline std::vector<uint8_t> base64_decode(const void *input, size_t length)
     if (b64 [lastIdx + 3] == '=') {
         if (b64 [lastIdx + 2] == '=') {
             // Last block contains 1 octet.
-            const uint8_t a012345 = decode (b64 [lastIdx + 0]);
-            const uint8_t a670123 = decode (b64 [lastIdx + 1]);
-            result.emplace_back ((a012345 << 2) | (a670123 >> 4)) ;
+            const uint8_t a012345 = decode(b64[lastIdx + 0]);
+            const uint8_t a670123 = decode(b64[lastIdx + 1]);
+            result.emplace_back((a012345 << 2) | (a670123 >> 4));
         }
         else {
             // Last block contains 2 octet.
